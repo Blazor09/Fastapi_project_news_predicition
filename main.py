@@ -25,9 +25,15 @@ posts: list[dict] = [
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 @app.get("/posts", response_class=HTMLResponse, include_in_schema=False)
 def home():
-    return f"<h1>{posts[0]['title']}</h1>"
+    content = ""
 
+    for post in posts:
+        content += f"""
+        <h2>{post['title']}</h2>
+        <p><strong>By:</strong> {post['author']}</p>
+        <p>{post['content']}</p>
+        <small>{post['date_posted']}</small>
+        <hr>
+        """
 
-@app.get("/api/posts")
-def get_posts():
-    return posts
+    return f"<html><body>{content}</body></html>"
