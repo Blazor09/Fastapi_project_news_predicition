@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Blog Insights</title>
+    <style>
+        :root { --primary: #6366f1; --bg: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #1e293b; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 40px; }
+        .post-card { 
+            background: white; padding: 25px; border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); margin-bottom: 20px;
+        }
+        .form-card { border: 2px dashed #6366f1; background: #fdfdff; margin-bottom: 40px; }
+        .category-tag { 
+            background: #e0e7ff; color: var(--primary); 
+            padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+        }
+        input, textarea { 
+            width: 100%; padding: 10px; margin-bottom: 10px; 
+            border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; 
+        }
+        button { 
+            background: #6366f1; color: white; border: none; 
+            padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; 
+        }
+        button:hover { background: #4f46e5; }
+        .meta { font-size: 0.9rem; color: #64748b; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Smart Blog Engine</h1>
+            <p>FastAPI + Machine Learning Prediction</p>
+        </header>
+
+        <div class="post-card form-card">
+            <h3 style="margin-top:0;">Create New Post</h3>
+            <form action="/add-post" method="post">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="text" name="title" placeholder="Post Title" required>
+                    <input type="text" name="author" placeholder="Your Name" required>
+                </div>
+                <textarea name="content" placeholder="Write something... the AI will categorize it!" required></textarea>
+                <button type="submit">Post to Blog</button>
+            </form>
+        </div>
+
+        <hr style="margin-bottom: 40px; opacity: 0.2;">
+
+        <div id="blog-posts">
+            {% for post in posts %}
+            <div class="post-card">
+                <span class="category-tag">{{ post.category | default("Uncategorized") }}</span>
+                <h2>{{ post.title }}</h2>
+                <div class="meta">By <strong>{{ post.author }}</strong> • {{ post.date_posted }}</div>
+                <p>{{ post.content }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

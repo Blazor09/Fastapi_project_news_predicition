@@ -1,85 +1,88 @@
 import pickle
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
-from models import Post  # Ensure Post is defined in models.py
+from fastapi import FastAPI, HTTPException, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from models import Post 
 
 app = FastAPI()
 
-# Load your model once at startup
+# Setup Templates
+templates = Jinja2Templates(directory="templates")
+
+# Load ML Model
 try:
     with open("LogisticRegression.pickle", "rb") as f:
         model = pickle.load(f)
-except FileNotFoundError:
+except Exception as e:
     model = None
-    print("Warning: LogisticRegression.pickle not found.")
+    print(f"Warning: Model could not be loaded. {e}")
 
-# Updated data with date_posted to prevent KeyErrors
+# Initial Data (Global list)
 posts = [
     {
         "id": 1, 
         "author": "Corey Schafer", 
         "title": "FastAPI is Awesome", 
-        "content": "This framework is really easy to use.",
-        "date_posted": "April 20, 2025"
-    },
-    {
-        "id": 2, 
-        "author": "Jane Doe", 
-        "title": "Python for Web", 
-        "content": "Python is great for development.",
-        "date_posted": "April 21, 2025"
+        "content": "This framework is really easy to use and super fast for building APIs.",
+        "date_posted": "April 20, 2026",
+        "category": "Tech"
     }
 ]
 
-# --- API ROUTES (JSON) ---
+# --- WEB ROUTES ---
+
+@app.get("/", response_class=HTMLResponse)
+async def render_blog(request: Request):
+    # Ensure all posts have categories via AI if missing
+    for post in posts:
+        if "category" not in post or post["category"] == "Uncategorized":
+            if model is not None:
+                prediction = model.predict([post["content"]])
+                post["category"] = str(prediction[0]).capitalize()
+    
+    return templates.TemplateResponse(
+        request=request, 
+        name="index.html", 
+        context={"posts": posts}
+    )
+
+@app.post("/add-post")
+async def add_post(
+    request: Request,
+    title: str = Form(...),
+    author: str = Form(...),
+    content: str = Form(...)
+):
+    # Create new post object
+    new_post = {
+        "id": len(posts) + 1,
+        "author": author,
+        "title": title,
+        "content": content,
+        "date_posted": "April 27, 2026",
+        "category": "Uncategorized"
+    }
+    
+    # Run AI Prediction immediately for the new post
+    if model is not None:
+        prediction = model.predict([content])
+        new_post["category"] = str(prediction[0]).capitalize()
+    
+    # Insert at the beginning of the global list
+    posts.insert(0, new_post)
+    
+    # Redirect to the home page to prevent form resubmission on refresh
+    return RedirectResponse(url="/", status_code=303)
+
+# --- API ROUTES (Keeping these for your docs) ---
 
 @app.get("/api/posts")
-def get_posts():
+def get_api_posts():
     return {"data": posts}
-
-@app.get("/api/posts/{post_id}")
-def get_post(post_id: int):
-    for post in posts:
-        if post["id"] == post_id:
-            return post
-    raise HTTPException(status_code=404, detail="Post not found")
-
-@app.post("/api/posts", status_code=201)
-def create_post(post: Post):
-    post_dict = post.model_dump()
-    posts.append(post_dict)
-    return post_dict
-
-# --- ML ROUTE ---
 
 @app.post("/predict-category")
 def predict_category(content: str):
-    # 1. Explicitly check if model exists
     if model is None:
-        raise HTTPException(
-            status_code=503, 
-            detail="Model is not available on this server."
-        )
-    
-    # 2. Now Pylance knows 'model' cannot be None beyond this point
+        raise HTTPException(status_code=503, detail="Model not available")
     prediction = model.predict([content]) 
     return {"prediction": str(prediction[0])}
-# --- WEB ROUTES (HTML) ---
-
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def root():
-    return "<h1>Hello World</h1><p>Visit <a href='/blog'>/blog</a> to see posts.</p>"
-
-@app.get("/blog", response_class=HTMLResponse, include_in_schema=False)
-def home():
-    content = ""
-    for post in posts:
-        content += f"""
-        <div style="margin-bottom: 20px; border-bottom: 1px solid #ccc;">
-            <h2>{post['title']}</h2>
-            <p><strong>By:</strong> {post['author']}</p>
-            <p>{post['content']}</p>
-            <small>{post.get('date_posted', 'No date')}</small>
-        </div>
-        """
-    return f"<html><body style='font-family: sans-serif; max-width: 800px; margin: auto;'>{content}</body></html>"
