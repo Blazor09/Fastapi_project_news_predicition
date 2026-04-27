@@ -1,8 +1,9 @@
 from pydantic import BaseModel
-from typing import Optional
+from datetime import datetime
 
-class Task(BaseModel):
+class Post(BaseModel):
     id: int
+    author: str
     title: str
-    description: Optional[str] = None
-    completed: bool = False
+    content: str
+    date_posted: str = datetime.now().strftime("%B %d, %Y")
