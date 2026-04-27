@@ -2,7 +2,6 @@ import pickle
 from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from models import Post 
 
 app = FastAPI()
 
@@ -17,7 +16,7 @@ except Exception as e:
     model = None
     print(f"Warning: Model could not be loaded. {e}")
 
-# Initial Data (Global list)
+# Initial Data (Using a list that we can modify)
 posts = [
     {
         "id": 1, 
@@ -26,6 +25,14 @@ posts = [
         "content": "This framework is really easy to use and super fast for building APIs.",
         "date_posted": "April 20, 2026",
         "category": "Tech"
+    },
+    {
+        "id": 2, 
+        "author": "AI Assistant",
+        "title": "Welcome to the App", 
+        "content": "This is a sample post to get you started.", 
+        "date_posted": "April 27, 2026",
+        "category": "General"
     }
 ]
 
@@ -53,9 +60,12 @@ async def add_post(
     author: str = Form(...),
     content: str = Form(...)
 ):
-    # Create new post object
+    # Robust ID Generation: Find the current max ID and add 1
+    # This prevents duplicate IDs after deletions
+    new_id = max([p["id"] for p in posts], default=0) + 1
+    
     new_post = {
-        "id": len(posts) + 1,
+        "id": new_id,
         "author": author,
         "title": title,
         "content": content,
@@ -63,18 +73,21 @@ async def add_post(
         "category": "Uncategorized"
     }
     
-    # Run AI Prediction immediately for the new post
     if model is not None:
         prediction = model.predict([content])
         new_post["category"] = str(prediction[0]).capitalize()
     
-    # Insert at the beginning of the global list
     posts.insert(0, new_post)
-    
-    # Redirect to the home page to prevent form resubmission on refresh
     return RedirectResponse(url="/", status_code=303)
 
-# --- API ROUTES (Keeping these for your docs) ---
+@app.post("/delete/{post_id}")
+async def delete_post(post_id: int):
+    global posts
+    # Keep every post except the one that matches the post_id
+    posts = [p for p in posts if p["id"] != post_id]
+    return RedirectResponse(url="/", status_code=303)
+
+# --- API ROUTES ---
 
 @app.get("/api/posts")
 def get_api_posts():
