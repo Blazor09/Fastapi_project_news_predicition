@@ -1,4 +1,18 @@
-venv/
+# Python
 __pycache__/
-*.pyc
-.env
+*.py[cod]
+*$py.class
+venv/
+venv1/
+.venv/
+
+# Environment / UV
+.uv/
+uv.lock
+
+# ML Models (Pickles can be very large)
+# If you want to keep the model on Git, comment the line below
+# LogisticRegression.pickle
+
+# OS files
+.DS_Storepip install scikit-learn==1.6.1
